@@ -435,6 +435,66 @@ const inyeccionMetodoPago = async () => {
     console.error("Error DB:", err);
   }
 };
+const inyeccionCarrito = async () => {
+  try {
+    await pool.query(`
+      INSERT INTO carrito (usuario_id, estado) VALUES
+        (1, 'FINALIZADO'),
+        (2, 'FINALIZADO');
+    `);
+    console.log("Insert 'Carrito' verificada.");
+
+  } catch (err) {
+    console.error("Error DB:", err);
+  }
+};
+const inyeccionCarritoDetalle = async () => {
+  try {
+    await pool.query(`
+      INSERT INTO carritoDetalle (carrito_id, producto_id, cantidad, precio_unitario, subtotal) VALUES
+        (1, 1, 2, 200, 400),
+        (1, 2, 1, 500, 500),
+        (1, 3, 1, 800, 800),
+        (2, 1, 1, 200, 200),
+        (2, 4, 1, 1250, 1250),
+        (2, 5, 1, 2500, 2500);
+    `);
+    console.log("Insert 'Carrito Detalle' verificada.");
+
+  } catch (err) {
+    console.error("Error DB:", err);
+  }
+};
+const inyeccionBoleta = async () => {
+  try {
+    await pool.query(`
+      INSERT INTO boleta (numero_boleta, usuario_id, carrito_id, metodoPago_id, subtotal, iva, total, direccion_envio, estado ) VALUES 
+        ('BOL-0001', 1, 1, 1, 1700, 323, 2023, 'Pje. Los Álamos 99', 'PAGADA'),
+        ('BOL-0002', 2, 2, 2, 3950, 751, 4701, 'Calle Mirador Sur 55', 'PAGADA');
+    `);
+    console.log("Insert 'Boleta' verificada.");
+
+  } catch (err) {
+    console.error("Error DB:", err);
+  }
+};
+const inyeccionBoletaDetalle = async () => {
+  try {
+    await pool.query(`
+      INSERT INTO boletaDetalle (boleta_id, producto_id, cantidad, precio_unitario, subtotal) VALUES
+        (1, 1, 2, 200, 400),
+        (1, 2, 1, 500, 500),
+        (1, 3, 1, 800, 800),
+        (2, 1, 1, 200, 200),
+        (2, 4, 1, 1250, 1250),
+        (2, 5, 1, 2500, 2500);
+    `);
+    console.log("Insert 'Boleta Detalle' verificada.");
+
+  } catch (err) {
+    console.error("Error DB:", err);
+  }
+};
 //-------------------------------------------------------------------------- TABLAS APP MOVIL
 //----------------------------------------- TABLA CUENTA
 const crearTablaCuenta = async () => {
@@ -712,6 +772,10 @@ const setupDB = async () => {
     await inyeccionUsuario();
     await inyeccionCategoria();
     await inyeccionProducto();
+    await inyeccionCarrito();
+    await inyeccionCarritoDetalle();
+    await inyeccionBoleta();
+    await inyeccionBoletaDetalle();
 
     console.log("Creando tablas APP Movil...");
     await crearTablaCuenta();// 1
@@ -1829,6 +1893,17 @@ app.get('/boletaDetalle/:id', async (req, res) => {
   const { id } = req.params;
 
   const result = await pool.query('SELECT * FROM boletaDetalle WHERE id = $1', [id]);
+
+  if (result.rows.length === 0) {
+    return res.status(404).send({ message: 'Detalle no encontrado' });
+  }
+  res.json(result.rows[0]);
+});
+// BUSCAR boleta_id
+app.get('/boletaDetalle/boleta/:id', async (req, res) => {
+  const { id } = req.params;
+
+  const result = await pool.query('SELECT * FROM boletaDetalle WHERE boleta_id = $1', [id]);
 
   if (result.rows.length === 0) {
     return res.status(404).send({ message: 'Detalle no encontrado' });
