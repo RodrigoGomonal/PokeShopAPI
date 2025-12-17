@@ -1908,7 +1908,7 @@ app.get('/boletaDetalle/boleta/:id', async (req, res) => {
   if (result.rows.length === 0) {
     return res.status(404).send({ message: 'Detalle no encontrado' });
   }
-  res.json(result.rows[0]);
+  res.json(result.rows);
 });
 // CREAR
 app.post('/boletaDetalle', async (req, res) => {
