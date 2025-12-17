@@ -1374,20 +1374,25 @@ app.get('/usuarios/email/:correo', async (req, res) => {
   res.json(result.rows);
 });
 // Crear nuevo usuario
-/* app.post('/usuarios', async (req, res) => {
-  const { rut, nombre, apellidos, correo, clave, fecha_nac, telefono, direccion, region_id, comuna_id, tipoUsuario_id, active } = req.body;
-  const result = await pool.query(
-    `INSERT INTO usuario (rut, nombre, apellidos, correo, clave, fecha_nac, telefono, direccion, region_id, comuna_id, tipoUsuario_id, active) 
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
-    [rut, nombre, apellidos, correo, clave, fecha_nac, telefono, direccion, region_id, comuna_id, tipoUsuario_id, active]
-  );
-  res.status(201).json(result.rows[0]);
-}); */
 app.post('/usuarios', async (req, res) => {
   const { rut, nombre, apellidos, correo, clave, fecha_nac, telefono, direccion, region_id, comuna_id, tipoUsuario_id, active } = req.body;
   
   try {
-    // 1. Crear el usuario
+    // 1. Verificar si el correo ya existe
+    const checkQuery = 'SELECT correo, rut FROM usuario WHERE correo = $1 OR rut = $2';
+    const checkResult = await pool.query(checkQuery, [correo, rut]);
+    
+    if (checkResult.rows.length > 0) {
+      const existe = checkResult.rows[0];
+      if (existe.rut === rut) {
+        return res.status(400).json({ message: 'El RUT ya está registrado' });
+      }
+      if (existe.correo === correo) {
+        return res.status(400).json({ message: 'El correo ya está registrado' });
+      }
+    }
+
+    // 2. Crear el usuario
     const result = await pool.query(
       `INSERT INTO usuario (rut, nombre, apellidos, correo, clave, fecha_nac, telefono, direccion, region_id, comuna_id, tipoUsuario_id, active) 
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
@@ -1396,7 +1401,7 @@ app.post('/usuarios', async (req, res) => {
     
     const nuevoUsuario = result.rows[0];
     
-    // 2. Generar token JWT para login automático
+    // 3. Generar token JWT para login automático
     const token = jwt.sign(
       { 
         id: nuevoUsuario.id,
@@ -1407,7 +1412,7 @@ app.post('/usuarios', async (req, res) => {
       { expiresIn: '24h' }
     );
     
-    // 3. Devolver usuario + token (igual que /auth/login)
+    // 4. Devolver usuario + token (igual que /auth/login)
     res.status(201).json({
       token,
       usuario: {
@@ -1427,7 +1432,7 @@ app.post('/usuarios', async (req, res) => {
     });
     
   } catch (error) {
-    console.error('❌ Error creando usuario:', error);
+    console.error('Error creando usuario:', error);
     res.status(500).json({ message: 'Error al crear usuario' });
   }
 });
@@ -1447,9 +1452,17 @@ app.put('/usuarios/:rut', async (req, res) => {
   res.json(result.rows[0]);
 });
 // Eliminar usuario
-app.delete('/usuarios/:rut', async (req, res) => {
+/* app.delete('/usuarios/:rut', async (req, res) => {
   const { rut } = req.params;
   const result = await pool.query('DELETE FROM usuario WHERE rut = $1 RETURNING *', [rut]);
+  if (result.rows.length === 0) {
+    return res.status(404).send({ message: 'Usuario no encontrado para eliminar' });
+  }
+  res.status(204).send();
+}); */
+app.delete('/usuarios/:id', async (req, res) => {
+  const { id } = req.params;
+  const result = await pool.query('DELETE FROM usuario WHERE id = $1 RETURNING *', [id]);
   if (result.rows.length === 0) {
     return res.status(404).send({ message: 'Usuario no encontrado para eliminar' });
   }
